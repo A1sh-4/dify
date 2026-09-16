@@ -11,7 +11,7 @@ This test suite covers:
 import json
 from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import PropertyMock, patch
+from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import pytest
@@ -415,15 +415,18 @@ class TestAppModelConfig:
         config = AppModelConfig(app_id=str(uuid4()))
         annotation_reply = {"enabled": False}
 
-        with patch.object(
-            AppModelConfig,
-            "annotation_reply_dict",
-            new_callable=PropertyMock,
-            side_effect=AssertionError("annotation_reply_dict should not be accessed"),
-        ):
-            result = config.to_dict(annotation_reply=annotation_reply)
+        result = config.to_dict(annotation_reply=annotation_reply)
 
         assert result["annotation_reply"] == annotation_reply
+
+    def test_to_dict_requires_annotation_reply(self):
+        """``to_dict`` has no global-session fallback: the caller must inject the config."""
+        config = AppModelConfig(app_id=str(uuid4()))
+
+        with pytest.raises(TypeError):
+            config.to_dict()  # type: ignore[call-arg]
+
+        assert not hasattr(AppModelConfig, "annotation_reply_dict")
 
 
 class TestAnnotationReplyConfigLoader:
